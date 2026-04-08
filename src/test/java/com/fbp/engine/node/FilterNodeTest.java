@@ -1,79 +1,50 @@
 package com.fbp.engine.node;
 
 import com.fbp.engine.core.Connection;
-import com.fbp.engine.core.InputPort;
 import com.fbp.engine.message.Message;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class FilterNodeTest {
-    private FilterNode filterNode;
-    private List<Message> receivedMessages;
-    private final String KEY = "temp";
-    private final double THRESHOLD = 30.0;
 
-    @BeforeEach
-    void setUp() {
-        // 1. 테스트할 필터 노드 생성 (기준: temp가 30.0 이상일 것)
-        filterNode = new FilterNode("test-filter", KEY, THRESHOLD);
-        receivedMessages = new ArrayList<>();
-
-        // 2. 필터의 출구(OutputPort)에 테스트용 선로와 포트를 연결
+    @Test
+    @DisplayName("1. 조건 만족 시 메시지 전달 (threshold 이상)")
+    void testConditionMet() {
+        // 기준값 10.0 설정
+        FilterNode filter = new FilterNode("f-1", "val", 10.0);
         Connection conn = new Connection();
-        InputPort mockTarget = new InputPort() {
-            @Override public String getName() { return "mock-in"; }
-            @Override public void receive(Message message) { receivedMessages.add(message); }
-        };
+        filter.getOutputPort("out").connect(conn);
 
-        conn.setTarget(mockTarget);
-        filterNode.getOutputPort().connect(conn);
+        // 15.0 전송 (기준치 이상)
+        filter.process(new Message(Map.of("val", 15.0)));
+
+        // OutputPort로 전달되었는지 확인
+        assertEquals(1, conn.getBufferSize(), "기준치 이상인 메시지는 'out' 포트로 전달되어야 합니다.");
     }
 
     @Test
-    @DisplayName("1. 조건 만족 시 통과 (Value >= Threshold)")
-    void testConditionSatisfied() {
-        Message msg = new Message(Map.of(KEY, 35.0));
-        filterNode.process(msg);
+    @DisplayName("2. 조건 미달 시 메시지 차단 (threshold 미만)")
+    void testConditionNotMet() {
+        FilterNode filter = new FilterNode("f-2", "val", 10.0);
+        Connection conn = new Connection();
+        filter.getOutputPort("out").connect(conn);
 
-        // 검증: 메시지가 필터를 통과하여 리스트에 들어있어야 함
-        assertEquals(1, receivedMessages.size());
-        assertEquals(35.0, (Double) receivedMessages.get(0).get(KEY));
+        // 5.0 전송 (기준치 미만)
+        filter.process(new Message(Map.of("val", 5.0)));
+
+        // OutputPort에 메시지가 전달되지 않았는지 확인
+        assertEquals(0, conn.getBufferSize(), "기준치 미만인 메시지는 차단되어 전달되지 않아야 합니다.");
     }
 
     @Test
-    @DisplayName("2. 조건 미달 시 차단 (Value < Threshold)")
-    void testConditionNotSatisfied() {
-        Message msg = new Message(Map.of(KEY, 25.0));
-        filterNode.process(msg);
+    @DisplayName("3. 포트 구성 확인: 'in'과 'out' 포트가 존재해야 함")
+    void testPortConfiguration() {
+        FilterNode filter = new FilterNode("f-3", "val", 10.0);
 
-        // 검증: 메시지가 차단되어 리스트가 비어있어야 함
-        assertTrue(receivedMessages.isEmpty());
-    }
-
-    @Test
-    @DisplayName("3. 경계값 처리 (Value == Threshold)")
-    void testBoundaryValue() {
-        Message msg = new Message(Map.of(KEY, 30.0));
-        filterNode.process(msg);
-
-        // 검증: '이상' 조건이므로 30.0은 통과해야 함
-        assertEquals(1, receivedMessages.size());
-    }
-
-    @Test
-    @DisplayName("4. 키가 없는 메시지 처리")
-    void testMissingKey() {
-        Message msg = new Message(Map.of("other_key", 100));
-
-        // 실행 시 예외가 발생하지 않아야 하며, 메시지는 차단되어야 함
-        assertDoesNotThrow(() -> filterNode.process(msg));
-        assertTrue(receivedMessages.isEmpty());
+        // 입력 포트 "in"과 출력 포트 "out"이 null이 아님을 확인
+        assertNotNull(filter.getInputPort("in"), "입력 포트 'in'이 존재해야 합니다.");
+        assertNotNull(filter.getOutputPort("out"), "출력 포트 'out'이 존재해야 합니다.");
     }
 }

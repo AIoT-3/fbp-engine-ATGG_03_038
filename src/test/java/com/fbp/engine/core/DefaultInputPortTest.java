@@ -18,12 +18,12 @@ class DefaultInputPortTest {
         AtomicBoolean isProcessCalled = new AtomicBoolean(false);
 
         // 2. 테스트용 익명 노드(Mock) 생성
+        // 익명 클래스 생성 시 missing method 에러 해결
         Node mockNode = new Node() {
-            @Override public String getId() { return "test-node"; }
-            @Override
-            public void process(Message message) {
-                isProcessCalled.set(true); // 호출되면 플래그를 true로 변경
-            }
+            @Override public String getId() { return "test"; }
+            @Override public void initialize() { } // 추가
+            @Override public void process(Message m) { isProcessCalled.set(true); }
+            @Override public void shutdown() { } // 추가
         };
 
         DefaultInputPort inputPort = new DefaultInputPort("in", mockNode);

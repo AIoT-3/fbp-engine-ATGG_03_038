@@ -1,36 +1,38 @@
 package com.fbp.engine.node;
 
-import com.fbp.engine.core.InputPort;
+import com.fbp.engine.core.AbstractNode;
 import com.fbp.engine.message.Message;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
 import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class PrintNodeTest {
 
     @Test
-    @DisplayName("1. InputPort 조회 확인")
-    void testGetInputPort() {
-        PrintNode printNode = new PrintNode("test-printer");
-
-        // 검증: 노드가 생성될 때 InputPort도 함께 생성되어야 함
-        assertNotNull(printNode.getInputPort(), "PrintNode는 입력을 받기 위한 InputPort를 가지고 있어야 합니다.");
-        assertEquals("in", printNode.getInputPort().getName());
+    @DisplayName("1. 포트 구성 확인: 'in' 포트가 존재해야 함")
+    void testPortConfiguration() {
+        PrintNode printer = new PrintNode("p-1");
+        // getInputPort("in")이 null이 아님을 확인
+        assertNotNull(printer.getInputPort("in"), "PrintNode는 'in'이라는 이름의 입력 포트를 가져야 합니다.");
     }
 
     @Test
-    @DisplayName("2. InputPort를 통한 수신 및 process 실행 확인")
-    void testReceiveThroughPort() {
-        PrintNode printNode = new PrintNode("test-printer");
-        InputPort inputPort = printNode.getInputPort();
-        Message msg = new Message(Map.of("data", "test-print"));
+    @DisplayName("2. process 정상 동작: 메시지 처리 시 예외가 발생하지 않아야 함")
+    void testProcessExecution() {
+        PrintNode printer = new PrintNode("p-2");
+        Message msg = new Message(Map.of("data", "hello"));
 
-        // 실행: 노드를 직접 호출하는 것이 아니라, 포트의 receive를 호출합니다.
-        // 내부 흐름: Port.receive() -> Node.process()
-        // 검증: 이 과정에서 예외가 발생하지 않고 정상 실행되는지 확인합니다.
-        assertDoesNotThrow(() -> inputPort.receive(msg));
+        // process() 호출 시 에러 없이 실행되는지 확인
+        assertDoesNotThrow(() -> printer.process(msg));
+    }
+
+    @Test
+    @DisplayName("3. AbstractNode 상속 확인: instanceof 검증")
+    void testInheritance() {
+        PrintNode printer = new PrintNode("p-3");
+
+        // AbstractNode의 인스턴스인지 확인
+        assertTrue(printer instanceof AbstractNode, "PrintNode는 AbstractNode를 상속받은 상태여야 합니다.");
     }
 }
