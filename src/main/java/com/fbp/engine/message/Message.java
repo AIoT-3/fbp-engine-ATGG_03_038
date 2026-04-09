@@ -12,7 +12,6 @@ public class Message {
 
     public Message(Map<String, Object> payload) {
         this.id = UUID.randomUUID().toString();
-        // 1. 방어적 복사 및 불변 맵 생성 (외부에서의 수정을 차단)
         this.payload = Collections.unmodifiableMap(new HashMap<>(payload));
         this.timestamp = System.currentTimeMillis();
     }
@@ -35,7 +34,6 @@ public class Message {
         return payload;
     }
 
-    // 2. 제네릭 메서드: 꺼낼 때 자동으로 형변환 (Casting) 해줌
     @SuppressWarnings("unchecked")
     public <T> T get(String key) {
         return (T) payload.get(key);
